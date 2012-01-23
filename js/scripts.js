@@ -52,6 +52,8 @@
 				})
 			};
 			this.checkCollisions = function(objToCheck) {
+				//The below algorithm would not have been possible without studying the collision JS file from http://andersonferminiano.com/
+				//http://andersonferminiano.com/html5/studies/balls_collisions/collision.js
 				var centerA = { x: this.x+(this.size/2), y: this.y+(this.size/2) };
 				var centerB = { x:objToCheck.x+(objToCheck.size/2), y: objToCheck.y+(objToCheck.size/2) };
 				var distance = Math.sqrt(((centerB.x-centerA.x)*(centerB.x-centerA.x) + (centerB.y-centerA.y)*(centerB.y-centerA.y)));
