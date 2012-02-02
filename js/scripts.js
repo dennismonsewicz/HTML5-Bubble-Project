@@ -1,92 +1,105 @@
-// EXTENDING OBJECTS
-	Array.prototype.min = function(array) {
-		return Math.min.apply(Math, array);
+// GLOBALS
+	var randomHexGenerator = function(){
+		return '#'+'0123456789abcdef'.split('').map(function(v,i,a){
+			return i>5 ? null : a[Math.floor(Math.random()*16)] }).join('')
 	}
 	
-	Array.prototype.max = function(array) {
-		return Math.max.apply(Math, array)
+	Kinetic.Orb = function(config) {
+		var name = config.shapeName;
+		var x = config.x || 0;
+		var y = config.y || 0;
+		this.radius = config.radius || 70;
+		var color = config.color || randomHexGenerator();
+		var opacity = config.opacity || 1;
+		this._x = x;
+		this._y = y;
+		
+		var draw = function(){
+			var context = this.getContext();
+			var canvas = this.getCanvas();
+			context.beginPath();
+			context.arc(x, y, this.radius, 0, Math.PI *2, true);
+			context.fillStyle = color;
+			context.fill();
+			context.stroke();
+			canvas.style.opacity = opacity;
+		}
+		Kinetic.Shape.apply(this, [draw, name]);
+	}
+	
+	Kinetic.Orb.prototype = new Kinetic.Shape();
+	
+	var drawBackground = function(layer) {
+		var canvas = layer.getCanvas();
+		var context = layer.getContext();
+		context.fillStyle = '#000';
+		context.fillRect(0,0,800,600);
+	}
+	
+	var getChildren = function(appParent, appLayer) {
+		this.angle = 0;
+		var toRadians = Math.PI / 180;
+		var count = 0;
+		var padding = 30;
+		
+		for(i in data.data) {
+			count++;
+		}
+		
+		this.angleChange = (360/count);
+		
+		for(key in data.data) {
+			(function(){
+				var x = parseInt((Math.cos(this.angle * toRadians) * (appParent.radius + padding)) + ((appParent._x)));
+				var y = parseInt((Math.sin(this.angle * toRadians) * (appParent.radius + padding)) + ((appParent._y)));
+				var elem = new Kinetic.Orb({
+					shapeName: key,
+					color: '#CC6600'
+				})
+				elem.x = x;
+				elem.y = y;
+				elem.radius = 20;
+				this.angle -= this.angleChange;
+
+				appLayer.add(elem);
+			})();
+		}
+	}
+	
+	var init = function() {
+		var stage = new Kinetic.Stage("canvas", 500, 500);
+		var background = new Kinetic.Layer();
+		var appLayer = new Kinetic.Layer();
+
+		//Add background to canvas
+		stage.add(background);
+		// //Fill in background
+		drawBackground(background);
+		
+		var logo = new Kinetic.Orb({
+			shapeName: 'Logo',
+			radius: 70,
+			color: '#FF9900',
+			x: stage.width / 2,
+			y: stage.width / 3
+		});
+		logo.on("click", function(){
+			getChildren(this, appLayer);
+			appLayer.draw();
+		})
+		appLayer.add(logo);
+		// 
+		
+		stage.add(appLayer);
+		//Add shapes layer to canvas
+		//Fade in logo
+		$(logo.getCanvas()).animate({
+			opacity: 1,
+			top: "+=50px"
+		}, 1000);
 	}
 //
 
-// GLOBALS
-    var xmlData = '<?xml version="1.0" encoding="UTF-8"?><root name="CompanyName"><projects><project name="Project1"></project><project name="Project2"></project><project name="Project3"></project></projects></root>'
-
-    var xmlObj = []
-		var xmlDoc, xml;
-    var padding = 15
-    var canvas = oCanvas.create({
-        canvas: '#myCanvas'
-    })
-    var c_width = canvas.width
-    var c_height = canvas.height
-
-    var logo = canvas.display.ellipse({
-        x: c_width / 2,
-        y: c_height / 3,
-        radius: 80,
-        fill: '#d15851'
-    })
-
-		var rectObj = function(){
-			this.x =  0;
-			this.y =  0;
-			this.width =  100;
-			this.height = 100;
-			this.size = this.width + this.height; //this would equate to a circles radius if dealing with circles
-			this.fillerText =  null;
-			this.fillRect = function(hexVal){
-				if(!hexVal)
-					return '#'+'0123456789abcdef'.split('').map(function(v,i,a){
-	            return i>5 ? null : a[Math.floor(Math.random()*16)] }).join('')
-				else
-					return hexVal
-					
-			};
-			this.drawRect = function(){
-				return canvas.display.rectangle({
-					width: this.width,
-					height: this.height,
-					fill: this.fillRect(),
-					x: this.x,
-					y: this.y
-				})
-			};
-			this.checkCollisions = function(objToCheck) {
-				//The below algorithm would not have been possible without studying the collision JS file from http://andersonferminiano.com/
-				//http://andersonferminiano.com/html5/studies/balls_collisions/collision.js
-				var centerA = { x: this.x+(this.size/2), y: this.y+(this.size/2) };
-				var centerB = { x:objToCheck.x+(objToCheck.size/2), y: objToCheck.y+(objToCheck.size/2) };
-				var distance = Math.sqrt(((centerB.x-centerA.x)*(centerB.x-centerA.x) + (centerB.y-centerA.y)*(centerB.y-centerA.y)));
-				
-				if(distance < (this.size+objToCheck.size)) {
-					objToCheck.x = this.x - (canvas.width/4)
-				}
-			}
-		}
-
-    canvas.addChild(logo)
-
-    var parseXML = function() {
-        xmlDoc = $.parseXML(xmlData)
-        xml = $(xmlDoc)
-
-        xml.find('project').each(function(i){
-					xmlObj[i] = new rectObj()
-					xmlObj[i].fillerText = $(this).attr('name')
-					xmlObj[i].x = (logo.x + logo.radius * Math.cos((360*Math.PI) / (i + 1)) + padding) + ((xmlObj[i].width / 2) + (i+1));
-					xmlObj[i].y = (logo.y + logo.radius) + padding;
-        });
-				
-				for(i = 0; i < xmlObj.length; i++) {
-					for(a = i+1; a < xmlObj.length; a++) {
-						xmlObj[i].checkCollisions(xmlObj[a])
-					}
-					canvas.addChild(xmlObj[i].drawRect())
-				}
-    }
-
-//
-
-$(document).ready(function(){
-    parseXML()
+$(window).ready(function(){
+	init();
 })
